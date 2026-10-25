@@ -1,0 +1,109 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  role         String        @default("USER") // "USER", "ARTIST", "ADMIN"
+  avatarUrl    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  playlists    Playlist[]
+  likedTracks  LikedTrack[]
+  artist       Artist?
+}
+
+model Artist {
+  id               String   @id @default(uuid())
+  name             String
+  bio              String?
+  image            String?
+  monthlyListeners Int      @default(0)
+  isVerified       Boolean  @default(false)
+  userId           String?  @unique
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  albums           Album[]
+  tracks           Track[]
+  createdAt        DateTime @default(now())
+}
+
+model Album {
+  id          String   @id @default(uuid())
+  title       String
+  coverArt    String
+  releaseYear Int
+  artistId    String
+  artist      Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  tracks      Track[]
+  createdAt   DateTime @default(now())
+}
+
+model Track {
+  id             String          @id @default(uuid())
+  title          String
+  duration       Int             // duration in seconds
+  audioUrl       String          // public URL or route URL
+  filePath       String?         // local path inside server/media/audio for 206 streaming
+  plays          Int             @default(0)
+  albumId        String?
+  album          Album?          @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  artistId       String
+  artist         Artist          @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  playlistTracks PlaylistTrack[]
+  likedBy        LikedTrack[]
+  createdAt      DateTime        @default(now())
+}
+
+model Playlist {
+  id          String          @id @default(uuid())
+  name        String
+  description String?
+  coverArt    String?
+  isPublic    Boolean         @default(true)
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tracks      PlaylistTrack[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model PlaylistTrack {
+  id         String   @id @default(uuid())
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  trackId    String
+  track      Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  order      Int      @default(0)
+  addedAt    DateTime @default(now())
+
+  @@unique([playlistId, trackId])
+}
+
+model LikedTrack {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId   String
+  track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  addedAt   DateTime @default(now())
+
+  @@unique([userId, trackId])
+}
+
+model PasswordResetOtp {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
