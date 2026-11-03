@@ -15,6 +15,7 @@ const {
   createPlaylist,
   addTrackToPlaylist,
   removeTrackFromPlaylist,
+  deletePlaylist,
 } = require('../controllers/playlistController');
 const { getAlbums, getAlbumById, createAlbum } = require('../controllers/albumController');
 const { getArtists, getArtistById } = require('../controllers/artistController');
@@ -61,6 +62,7 @@ router.post('/tracks/:id/like', authenticate, toggleLikeTrack);
 router.get('/playlists', optionalAuth, getPlaylists);
 router.post('/playlists', authenticate, createPlaylist);
 router.get('/playlists/:id', optionalAuth, getPlaylistById);
+router.delete('/playlists/:id', authenticate, deletePlaylist);
 router.post('/playlists/:id/tracks', authenticate, addTrackToPlaylist);
 router.delete('/playlists/:id/tracks/:trackId', authenticate, removeTrackFromPlaylist);
 

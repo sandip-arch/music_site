@@ -10,6 +10,7 @@ export const TrackTable = ({
   showAlbum = true,
   onAddToPlaylist,
   onDeleteTrack,
+  deleteTooltip = 'Delete track',
 }) => {
   const { currentTrack, isPlaying, playTrack, togglePlay, likedTrackIds, toggleLike } =
     usePlayerStore();
@@ -45,22 +46,17 @@ export const TrackTable = ({
           const isSelectedThis = isCurrentTrack(track.id);
           const isLiked = likedTrackIds.includes(track.id);
 
-          // Strictly accessible only by ADMIN as requested
-          const canDelete = user?.role === 'ADMIN';
-
           return (
             <div
               key={track.id || index}
-              className={`grid grid-cols-[16px_4fr_3fr_1fr_minmax(120px,1fr)] gap-4 px-4 py-2.5 rounded-md items-center text-sm group hover:bg-white/10 transition-colors ${
-                isSelectedThis ? 'bg-white/10' : ''
-              }`}
+              className={`grid grid-cols-[16px_4fr_3fr_1fr_minmax(120px,1fr)] gap-4 px-4 py-2.5 rounded-md items-center text-sm group hover:bg-white/10 transition-colors ${isSelectedThis ? 'bg-white/10' : ''
+                }`}
             >
               {/* Index or Play icon */}
               <div className="flex items-center justify-center">
                 <span
-                  className={`group-hover:hidden text-xs font-mono ${
-                    isSelectedThis ? 'text-spotify-green font-bold' : 'text-spotify-muted'
-                  }`}
+                  className={`group-hover:hidden text-xs font-mono ${isSelectedThis ? 'text-spotify-green font-bold' : 'text-spotify-muted'
+                    }`}
                 >
                   {isPlayingThis ? (
                     <Volume2 className="w-4 h-4 text-spotify-green animate-pulse" />
@@ -93,9 +89,8 @@ export const TrackTable = ({
                 <div className="overflow-hidden">
                   <p
                     onClick={() => handleTrackClick(track)}
-                    className={`font-medium truncate cursor-pointer hover:underline ${
-                      isSelectedThis ? 'text-spotify-green font-semibold' : 'text-white'
-                    }`}
+                    className={`font-medium truncate cursor-pointer hover:underline ${isSelectedThis ? 'text-spotify-green font-semibold' : 'text-white'
+                      }`}
                   >
                     {track.title}
                   </p>
@@ -130,11 +125,10 @@ export const TrackTable = ({
                 {/* Like Button */}
                 <button
                   onClick={() => toggleLike(track.id)}
-                  className={`transition-colors p-1 ${
-                    isLiked
+                  className={`transition-colors p-1.5 ${isLiked
                       ? 'text-spotify-green'
-                      : 'opacity-0 group-hover:opacity-100 hover:text-white'
-                  }`}
+                      : 'text-spotify-muted sm:opacity-0 sm:group-hover:opacity-100 hover:text-white'
+                    }`}
                   title={isLiked ? 'Remove from Liked' : 'Save to Liked'}
                 >
                   <Heart
@@ -146,19 +140,19 @@ export const TrackTable = ({
                 {onAddToPlaylist && (
                   <button
                     onClick={() => onAddToPlaylist(track)}
-                    className="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity p-1"
+                    className="text-spotify-muted sm:opacity-0 sm:group-hover:opacity-100 hover:text-white transition-opacity p-1.5"
                     title="Add to Playlist"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
                 )}
 
-                {/* Delete Button: Strictly Admin Only */}
-                {canDelete && onDeleteTrack && (
+                {/* Delete / Remove Button */}
+                {onDeleteTrack && (
                   <button
                     onClick={() => onDeleteTrack(track)}
-                    className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity p-1"
-                    title="Delete track from platform (Admin Only)"
+                    className="text-spotify-muted sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-400 transition-opacity p-1.5"
+                    title={deleteTooltip}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

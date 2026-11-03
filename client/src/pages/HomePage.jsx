@@ -21,7 +21,7 @@ export const HomePage = ({ onAddToPlaylist }) => {
         setLoading(true);
         const [tracksRes, playlistsRes, albumsRes, artistsRes] = await Promise.all([
           trackApi.getTracks({ limit: 10 }),
-          playlistApi.getPlaylists(),
+          playlistApi.getPlaylists({ featured: true }),
           albumApi.getAlbums(),
           artistApi.getArtists(),
         ]);

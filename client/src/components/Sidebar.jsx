@@ -9,8 +9,6 @@ import {
   Sparkles,
   ShieldCheck,
   Music2,
-  Disc3,
-  UserCircle,
   User,
 } from 'lucide-react';
 import { playlistApi } from '../api/client';
@@ -23,8 +21,12 @@ export const Sidebar = ({ onOpenCreatePlaylist, onOpenAuthModal }) => {
 
   const fetchPlaylists = async () => {
     try {
-      const res = await playlistApi.getPlaylists();
-      setPlaylists(res.data);
+      if (!isAuthenticated) {
+        setPlaylists([]);
+        return;
+      }
+      const res = await playlistApi.getPlaylists({ mine: true });
+      setPlaylists(res.data || []);
     } catch (err) {
       console.error('Failed to load playlists:', err);
     }
@@ -34,7 +36,15 @@ export const Sidebar = ({ onOpenCreatePlaylist, onOpenAuthModal }) => {
     fetchPlaylists();
     window.addEventListener('playlist-created', fetchPlaylists);
     return () => window.removeEventListener('playlist-created', fetchPlaylists);
-  }, [user]);
+  }, [user, isAuthenticated]);
+
+  const handleCreatePlaylistClick = () => {
+    if (!isAuthenticated) {
+      if (onOpenAuthModal) onOpenAuthModal();
+      return;
+    }
+    if (onOpenCreatePlaylist) onOpenCreatePlaylist();
+  };
 
   const navLinkClass = ({ isActive }) =>
     `flex items-center gap-4 px-4 py-3 text-sm font-semibold rounded-lg transition-colors duration-200 ${
@@ -82,7 +92,7 @@ export const Sidebar = ({ onOpenCreatePlaylist, onOpenAuthModal }) => {
       {/* Action Section */}
       <div className="px-3 mt-6 space-y-1">
         <button
-          onClick={onOpenCreatePlaylist}
+          onClick={handleCreatePlaylistClick}
           className="w-full flex items-center gap-4 px-4 py-2.5 text-sm font-semibold text-spotify-muted hover:text-white hover:bg-white/5 rounded-lg transition-colors group"
         >
           <div className="w-6 h-6 rounded bg-spotify-muted/20 group-hover:bg-white/20 flex items-center justify-center transition-colors">
@@ -145,24 +155,35 @@ export const Sidebar = ({ onOpenCreatePlaylist, onOpenAuthModal }) => {
       {/* Playlists Scroll Area */}
       <div className="flex-1 overflow-y-auto px-4 space-y-1">
         <p className="px-2 text-xs font-bold text-spotify-muted uppercase tracking-wider mb-2">
-          Playlists
+          Your Playlists
         </p>
-        {playlists.map((playlist) => (
-          <NavLink
-            key={playlist.id}
-            to={`/playlist/${playlist.id}`}
-            className={({ isActive }) =>
-              `block px-2 py-2 text-sm truncate rounded transition-colors ${
-                isActive
-                  ? 'text-spotify-green font-semibold'
-                  : 'text-spotify-muted hover:text-white'
-              }`
-            }
-            title={playlist.name}
-          >
-            {playlist.name}
-          </NavLink>
-        ))}
+
+        {!isAuthenticated ? (
+          <p className="px-2 py-3 text-xs text-spotify-muted/70 italic">
+            Log in to view your playlists.
+          </p>
+        ) : playlists.length === 0 ? (
+          <p className="px-2 py-3 text-xs text-spotify-muted/70 italic">
+            No playlists yet. Click "+ Create Playlist" above!
+          </p>
+        ) : (
+          playlists.map((playlist) => (
+            <NavLink
+              key={playlist.id}
+              to={`/playlist/${playlist.id}`}
+              className={({ isActive }) =>
+                `block px-2 py-2 text-sm truncate rounded transition-colors ${
+                  isActive
+                    ? 'text-spotify-green font-semibold'
+                    : 'text-spotify-muted hover:text-white'
+                }`
+              }
+              title={playlist.name}
+            >
+              {playlist.name}
+            </NavLink>
+          ))
+        )}
       </div>
 
       {/* Role Profile Badge Footer */}
@@ -178,29 +199,15 @@ export const Sidebar = ({ onOpenCreatePlaylist, onOpenAuthModal }) => {
               alt={user?.name || 'User'}
               className="w-8 h-8 rounded-full object-cover border border-white/20 group-hover:border-spotify-green transition-colors"
             />
-            <div className="truncate text-left">
-              <p className="text-sm font-semibold text-white truncate">{user?.name || 'Guest'}</p>
-              <div className="flex items-center gap-1.5">
-                <span
-                  className={`inline-block w-2 h-2 rounded-full ${
-                    user?.role === 'ADMIN'
-                      ? 'bg-amber-400'
-                      : user?.role === 'ARTIST'
-                      ? 'bg-purple-400'
-                      : 'bg-spotify-green'
-                  }`}
-                />
-                <span className="text-xs text-spotify-muted capitalize">{user?.role || 'Guest'}</span>
-              </div>
+            <div className="overflow-hidden text-left">
+              <p className="text-xs font-semibold text-white group-hover:text-spotify-green truncate">
+                {user?.name || 'Guest User'}
+              </p>
+              <p className="text-[10px] text-spotify-muted uppercase font-mono tracking-wider">
+                {user?.role || 'LISTENER'}
+              </p>
             </div>
           </Link>
-
-          <button
-            onClick={onOpenAuthModal}
-            className="text-xs font-bold text-spotify-green hover:underline cursor-pointer pl-2"
-          >
-            Switch
-          </button>
         </div>
       </div>
     </aside>

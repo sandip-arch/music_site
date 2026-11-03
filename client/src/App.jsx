@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { TopNav } from './components/TopNav';
 import { PlayerBar } from './components/PlayerBar';
@@ -26,6 +26,7 @@ import { trackApi } from './api/client';
 export function App() {
   const { initAuth, user } = useAuthStore();
   const { setLikedTrackIds } = usePlayerStore();
+  const navigate = useNavigate();
 
   const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -148,12 +149,16 @@ export function App() {
       <CreatePlaylistModal
         isOpen={isCreatePlaylistOpen}
         onClose={() => setIsCreatePlaylistOpen(false)}
+        onCreated={(playlist) => {
+          navigate(`/playlist/${playlist.id}`);
+        }}
       />
 
       <AddToPlaylistModal
         isOpen={!!trackToAddToPlaylist}
         track={trackToAddToPlaylist}
         onClose={() => setTrackToAddToPlaylist(null)}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
       <AuthModal

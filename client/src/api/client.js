@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API_BASE_URL = 'http://localhost:5000/api/v1';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -57,9 +57,10 @@ export const searchApi = {
 };
 
 export const playlistApi = {
-  getPlaylists: () => api.get('/playlists'),
+  getPlaylists: (params) => api.get('/playlists', { params }),
   getPlaylistById: (id) => api.get(`/playlists/${id}`),
   createPlaylist: (data) => api.post('/playlists', data),
+  deletePlaylist: (id) => api.delete(`/playlists/${id}`),
   addTrack: (playlistId, trackId) => api.post(`/playlists/${playlistId}/tracks`, { trackId }),
   removeTrack: (playlistId, trackId) => api.delete(`/playlists/${playlistId}/tracks/${trackId}`),
 };

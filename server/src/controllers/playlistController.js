@@ -2,17 +2,45 @@ const prisma = require('../prisma');
 
 const getPlaylists = async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const currentUserId = req.user?.id;
+    const { mine, featured } = req.query;
+
+    let where = {};
+
+    if (mine === 'true' || mine === true) {
+      // Return strictly the logged-in user's personalized playlists
+      if (!currentUserId) {
+        return res.json([]);
+      }
+      where = { userId: currentUserId };
+    } else if (featured === 'true' || featured === true) {
+      // Curated public editorial/system playlists (created by Admin or Artist)
+      where = {
+        isPublic: true,
+        user: { role: { in: ['ADMIN', 'ARTIST'] } },
+      };
+    } else {
+      // Default: Return the user's own playlists + curated editorial playlists
+      // (Never leak other individual users' personal playlists)
+      if (currentUserId) {
+        where = {
+          OR: [
+            { userId: currentUserId },
+            { isPublic: true, user: { role: { in: ['ADMIN', 'ARTIST'] } } },
+          ],
+        };
+      } else {
+        where = {
+          isPublic: true,
+          user: { role: { in: ['ADMIN', 'ARTIST'] } },
+        };
+      }
+    }
 
     const playlists = await prisma.playlist.findMany({
-      where: {
-        OR: [
-          { isPublic: true },
-          ...(userId ? [{ userId }] : []),
-        ],
-      },
+      where,
       include: {
-        user: { select: { id: true, name: true } },
+        user: { select: { id: true, name: true, role: true } },
         _count: { select: { tracks: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -32,7 +60,7 @@ const getPlaylistById = async (req, res) => {
     const playlist = await prisma.playlist.findUnique({
       where: { id },
       include: {
-        user: { select: { id: true, name: true, avatarUrl: true } },
+        user: { select: { id: true, name: true, avatarUrl: true, role: true } },
         tracks: {
           orderBy: { order: 'asc' },
           include: {
@@ -91,7 +119,7 @@ const createPlaylist = async (req, res) => {
         userId: req.user.id,
       },
       include: {
-        user: { select: { id: true, name: true } },
+        user: { select: { id: true, name: true, role: true } },
         _count: { select: { tracks: true } },
       },
     });
@@ -202,10 +230,41 @@ const removeTrackFromPlaylist = async (req, res) => {
   }
 };
 
+const deletePlaylist = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { id } = req.params;
+    const playlist = await prisma.playlist.findUnique({
+      where: { id },
+    });
+
+    if (!playlist) {
+      return res.status(404).json({ error: 'Playlist not found' });
+    }
+
+    if (playlist.userId !== req.user.id && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Not authorized to delete this playlist' });
+    }
+
+    await prisma.playlist.delete({
+      where: { id },
+    });
+
+    res.json({ message: 'Playlist deleted successfully' });
+  } catch (error) {
+    console.error('deletePlaylist error:', error);
+    res.status(500).json({ error: 'Failed to delete playlist' });
+  }
+};
+
 module.exports = {
   getPlaylists,
   getPlaylistById,
   createPlaylist,
   addTrackToPlaylist,
   removeTrackFromPlaylist,
+  deletePlaylist,
 };

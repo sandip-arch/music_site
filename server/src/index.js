@@ -3,13 +3,27 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+const os = require('os');
 const dotenv = require('dotenv');
 const apiRouter = require('./routes/api');
 
 dotenv.config();
 
-const app = express();
+const HOST = process.env.HOST || '0.0.0.0';
 const PORT = process.env.PORT || 5000;
+const app = express();
+
+function getLanIp() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
 
 // Security & utility middleware
 app.use(helmet({
@@ -56,9 +70,11 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`[Spotify Clone Express API] Running on http://localhost:${PORT}`);
-  console.log(`[Spotify Clone Express API] Audio Stream URL pattern: http://localhost:${PORT}/api/v1/tracks/stream/:id`);
+app.listen(PORT, HOST, () => {
+  const lanIp = getLanIp();
+  console.log(`[Spotify Clone Express API] Running locally: http://localhost:${PORT}`);
+  console.log(`[Spotify Clone Express API] Running on network: http://${lanIp}:${PORT}`);
+  console.log(`[Spotify Clone Express API] Audio Stream URL pattern: http://${lanIp}:${PORT}/api/v1/tracks/stream/:id`);
 });
 
 module.exports = app;
